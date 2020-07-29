@@ -168,30 +168,30 @@ def init_func_preproc_wf(bold_file):
 
     sbref_file = None
     # Find associated sbref, if possible
-    entities = layout.parse_file_entities(ref_file)
-    entities['suffix'] = 'sbref'
-    entities['extension'] = ['nii', 'nii.gz']  # Overwrite extensions
-    files = layout.get(return_type='file', **entities)
-    refbase = os.path.basename(ref_file)
-    if 'sbref' in config.workflow.ignore:
-        config.loggers.workflow.info("Single-band reference files ignored.")
-    elif files and multiecho:
-        config.loggers.workflow.warning(
-            "Single-band reference found, but not supported in "
-            "multi-echo workflows at this time. Ignoring.")
-    elif files:
-        sbref_file = files[0]
-        sbbase = os.path.basename(sbref_file)
-        if len(files) > 1:
-            config.loggers.workflow.warning(
-                "Multiple single-band reference files found for {}; using "
-                "{}".format(refbase, sbbase))
-        else:
-            config.loggers.workflow.info("Using single-band reference file %s.",
-                                         sbbase)
-    else:
-        config.loggers.workflow.info("No single-band-reference found for %s.",
-                                     refbase)
+    # entities = layout.parse_file_entities(ref_file)
+    # entities['suffix'] = 'sbref'
+    # entities['extension'] = ['nii', 'nii.gz']  # Overwrite extensions
+    # files = layout.get(return_type='file', **entities)
+    # refbase = os.path.basename(ref_file)
+    # if 'sbref' in config.workflow.ignore:
+    #     config.loggers.workflow.info("Single-band reference files ignored.")
+    # elif files and multiecho:
+    #     config.loggers.workflow.warning(
+    #         "Single-band reference found, but not supported in "
+    #         "multi-echo workflows at this time. Ignoring.")
+    # elif files:
+    #     sbref_file = files[0]
+    #     sbbase = os.path.basename(sbref_file)
+    #     if len(files) > 1:
+    #         config.loggers.workflow.warning(
+    #             "Multiple single-band reference files found for {}; using "
+    #             "{}".format(refbase, sbbase))
+    #     else:
+    #         config.loggers.workflow.info("Using single-band reference file %s.",
+    #                                      sbbase)
+    # else:
+    #     config.loggers.workflow.info("No single-band-reference found for %s.",
+    #                                  refbase)
 
     metadata = layout.get_metadata(ref_file)
 
@@ -542,66 +542,66 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
                 bold_sdc_wf.get_node(node).interface.out_path_base = 'fmriprep'
                 bold_sdc_wf.get_node(node).inputs.dismiss_entities = ("echo",)
 
-        if 'syn' in fmaps:
-            sdc_select_std = pe.Node(
-                KeySelect(fields=['std2anat_xfm']),
-                name='sdc_select_std', run_without_submitting=True)
-            sdc_select_std.inputs.key = 'MNI152NLin2009cAsym'
-            workflow.connect([
-                (inputnode, sdc_select_std, [('std2anat_xfm', 'std2anat_xfm'),
-                                             ('template', 'keys')]),
-                (sdc_select_std, bold_sdc_wf, [('std2anat_xfm', 'inputnode.std2anat_xfm')]),
-            ])
+        # if 'syn' in fmaps:
+        #     sdc_select_std = pe.Node(
+        #         KeySelect(fields=['std2anat_xfm']),
+        #         name='sdc_select_std', run_without_submitting=True)
+        #     sdc_select_std.inputs.key = 'MNI152NLin2009cAsym'
+        #     workflow.connect([
+        #         (inputnode, sdc_select_std, [('std2anat_xfm', 'std2anat_xfm'),
+        #                                      ('template', 'keys')]),
+        #         (sdc_select_std, bold_sdc_wf, [('std2anat_xfm', 'inputnode.std2anat_xfm')]),
+        #     ])
 
-        if fmaps.get('syn') is True:  # SyN forced
-            syn_unwarp_report_wf = init_sdc_unwarp_report_wf(
-                name='syn_unwarp_report_wf', forcedsyn=True)
-            workflow.connect([
-                (inputnode, syn_unwarp_report_wf, [
-                    ('t1w_dseg', 'inputnode.in_seg')]),
-                (bold_reference_wf, syn_unwarp_report_wf, [
-                    ('outputnode.ref_image', 'inputnode.in_pre')]),
-                (bold_reg_wf, syn_unwarp_report_wf, [
-                    ('outputnode.itk_t1_to_bold', 'inputnode.in_xfm')]),
-                (bold_sdc_wf, syn_unwarp_report_wf, [
-                    ('outputnode.syn_ref', 'inputnode.in_post')]),
-            ])
-
-            # Overwrite ``out_path_base`` of unwarping DataSinks
-            # And ensure echo is dropped from report
-            for node in syn_unwarp_report_wf.list_node_names():
-                if node.split('.')[-1].startswith('ds_'):
-                    syn_unwarp_report_wf.get_node(node).interface.out_path_base = 'fmriprep'
-                    syn_unwarp_report_wf.get_node(node).inputs.dismiss_entities = ("echo",)
+        # if fmaps.get('syn') is True:  # SyN forced
+        #     syn_unwarp_report_wf = init_sdc_unwarp_report_wf(
+        #         name='syn_unwarp_report_wf', forcedsyn=True)
+        #     workflow.connect([
+        #         (inputnode, syn_unwarp_report_wf, [
+        #             ('t1w_dseg', 'inputnode.in_seg')]),
+        #         (bold_reference_wf, syn_unwarp_report_wf, [
+        #             ('outputnode.ref_image', 'inputnode.in_pre')]),
+        #         (bold_reg_wf, syn_unwarp_report_wf, [
+        #             ('outputnode.itk_t1_to_bold', 'inputnode.in_xfm')]),
+        #         (bold_sdc_wf, syn_unwarp_report_wf, [
+        #             ('outputnode.syn_ref', 'inputnode.in_post')]),
+        #     ])
+        #
+        #     # Overwrite ``out_path_base`` of unwarping DataSinks
+        #     # And ensure echo is dropped from report
+        #     for node in syn_unwarp_report_wf.list_node_names():
+        #         if node.split('.')[-1].startswith('ds_'):
+        #             syn_unwarp_report_wf.get_node(node).interface.out_path_base = 'fmriprep'
+        #             syn_unwarp_report_wf.get_node(node).inputs.dismiss_entities = ("echo",)
 
     # Map final BOLD mask into T1w space (if required)
-    nonstd_spaces = set(spaces.get_nonstandard())
-    if nonstd_spaces.intersection(('T1w', 'anat')):
-        from niworkflows.interfaces.fixes import (
-            FixHeaderApplyTransforms as ApplyTransforms
-        )
-
-        boldmask_to_t1w = pe.Node(ApplyTransforms(interpolation='MultiLabel'),
-                                  name='boldmask_to_t1w', mem_gb=0.1)
-        workflow.connect([
-            (bold_reg_wf, boldmask_to_t1w, [
-                ('outputnode.itk_bold_to_t1', 'transforms')]),
-            (bold_t1_trans_wf, boldmask_to_t1w, [
-                ('outputnode.bold_mask_t1', 'reference_image')]),
-            (bold_bold_trans_wf, boldmask_to_t1w, [
-                ('outputnode.bold_mask', 'input_image')]),
-            (boldmask_to_t1w, outputnode, [
-                ('output_image', 'bold_mask_t1')]),
-        ])
-
-    if nonstd_spaces.intersection(('func', 'run', 'bold', 'boldref', 'sbref')):
-        workflow.connect([
-            (bold_bold_trans_wf, outputnode, [
-                ('outputnode.bold', 'bold_native')]),
-            (bold_bold_trans_wf, func_derivatives_wf, [
-                ('outputnode.bold_ref', 'inputnode.bold_native_ref'),
-                ('outputnode.bold_mask', 'inputnode.bold_mask_native')]),
-        ])
+    # nonstd_spaces = set(spaces.get_nonstandard())
+    # if nonstd_spaces.intersection(('T1w', 'anat')):
+    #     from niworkflows.interfaces.fixes import (
+    #         FixHeaderApplyTransforms as ApplyTransforms
+    #     )
+    #
+    #     boldmask_to_t1w = pe.Node(ApplyTransforms(interpolation='MultiLabel'),
+    #                               name='boldmask_to_t1w', mem_gb=0.1)
+    #     workflow.connect([
+    #         (bold_reg_wf, boldmask_to_t1w, [
+    #             ('outputnode.itk_bold_to_t1', 'transforms')]),
+    #         (bold_t1_trans_wf, boldmask_to_t1w, [
+    #             ('outputnode.bold_mask_t1', 'reference_image')]),
+    #         (bold_bold_trans_wf, boldmask_to_t1w, [
+    #             ('outputnode.bold_mask', 'input_image')]),
+    #         (boldmask_to_t1w, outputnode, [
+    #             ('output_image', 'bold_mask_t1')]),
+    #     ])
+    #
+    # if nonstd_spaces.intersection(('func', 'run', 'bold', 'boldref', 'sbref')):
+    #     workflow.connect([
+    #         (bold_bold_trans_wf, outputnode, [
+    #             ('outputnode.bold', 'bold_native')]),
+    #         (bold_bold_trans_wf, func_derivatives_wf, [
+    #             ('outputnode.bold_ref', 'inputnode.bold_native_ref'),
+    #             ('outputnode.bold_mask', 'inputnode.bold_mask_native')]),
+    #     ])
 
     if spaces.get_spaces(nonstandard=False, dim=(3,)):
         # Apply transforms in 1 shot
@@ -861,12 +861,7 @@ def _create_mem_gb(bold_fname):
 
 def _get_wf_name(bold_fname):
     """
-    Derive the workflow name for supplied BOLD file.
-
-    >>> _get_wf_name('/completely/made/up/path/sub-01_task-nback_bold.nii.gz')
-    'func_preproc_task_nback_wf'
-    >>> _get_wf_name('/completely/made/up/path/sub-01_task-nback_run-01_echo-1_bold.nii.gz')
-    'func_preproc_task_nback_run_01_echo_1_wf'
+    Use a default value
 
     """
     from nipype.utils.filemanip import split_filename
