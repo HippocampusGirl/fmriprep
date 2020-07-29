@@ -84,7 +84,7 @@ def build_workflow(config_file, retval):
     retval["workflow"] = init_fmriprep_wf()
 
     # Check for FS license after building the workflow
-    if not check_valid_fs_license():
+    if config.workflow.run_reconall and not check_valid_fs_license():
         build_log.critical("""\
 ERROR: a valid license file is required for FreeSurfer to run. fMRIPrep looked for an existing \
 license file at several paths, in this order: 1) command line argument ``--fs-license-file``; \
