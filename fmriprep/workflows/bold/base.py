@@ -316,7 +316,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
         name='initial_boldref_wf',
         omp_nthreads=omp_nthreads,
         bold_file=bold_file,
-        sbref_files=sbref_files,
+        sbref_files=[],
         multiecho=multiecho,
     )
     initial_boldref_wf.inputs.inputnode.dummy_scans = config.workflow.dummy_scans
