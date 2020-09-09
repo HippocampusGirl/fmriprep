@@ -48,8 +48,12 @@ def _build_parser():
 
     def _filter_pybids_none_any(dct):
         import bids
-        return {k: bids.layout.Query.ANY if v == "*" else v
-                for k, v in dct.items()}
+        return {
+            k: bids.layout.Query.NONE
+            if v is None
+            else (bids.layout.Query.ANY if v == "*" else v)
+            for k, v in dct.items()
+        }
 
     def _bids_filter(value):
         from json import loads
@@ -150,6 +154,13 @@ def _build_parser():
         type=PathExists,
         help="Reuse the anatomical derivatives from another fMRIPrep run or calculated "
         "with an alternative processing tool (NOT RECOMMENDED).",
+    )
+    g_bids.add_argument(
+        "--bids-database-dir",
+        metavar="PATH",
+        type=PathExists,
+        help="Path to an existing PyBIDS database folder, for faster indexing "
+             "(especially useful for large datasets)."
     )
 
     g_perfm = parser.add_argument_group("Options to handle performance")
@@ -307,6 +318,7 @@ https://fmriprep.readthedocs.io/en/%s/spaces.html"""
     )
     g_conf.add_argument(
         "--random-seed",
+        dest="_random_seed",
         action="store",
         type=int,
         default=None,
@@ -494,12 +506,11 @@ https://fmriprep.readthedocs.io/en/%s/spaces.html"""
         "aggregation, not reportlet generation for specific nodes.",
     )
     g_other.add_argument(
-        "--run-uuid",
+        "--config-file",
         action="store",
-        default=None,
-        help="Specify UUID of previous run, to include error logs in report. "
-        "No effect without --reports-only.",
-    )
+        metavar="FILE",
+        help="Use pre-generated configuration file. Values in file will be overridden "
+             "by command-line arguments.")
     g_other.add_argument(
         "--write-graph",
         action="store_true",
@@ -523,8 +534,15 @@ https://fmriprep.readthedocs.io/en/%s/spaces.html"""
         "world usage crucial for obtaining funding.",
     )
     g_other.add_argument(
+        "--debug",
+        action="store",
+        nargs="+",
+        choices=config.DEBUG_MODES + ("all",),
+        help="Debug mode(s) to enable. 'all' is alias for all available modes.",
+    )
+
+    g_other.add_argument(
         "--sloppy",
-        dest="debug",
         action="store_true",
         default=False,
         help="Use low-quality tools for speed - TESTING ONLY",
@@ -564,6 +582,12 @@ def parse_args(args=None, namespace=None):
 
     parser = _build_parser()
     opts = parser.parse_args(args, namespace)
+
+    if opts.config_file:
+        skip = {} if opts.reports_only else {"execution": ("run_uuid",)}
+        config.load(opts.config_file, skip=skip)
+        config.loggers.cli.info(f"Loaded previous configuration file {opts.config_file}")
+
     config.execution.log_level = int(max(25 - 5 * opts.verbose_count, logging.DEBUG))
     config.from_dict(vars(opts))
 

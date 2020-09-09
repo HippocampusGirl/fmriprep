@@ -12,7 +12,7 @@ def main():
     import gc
     from multiprocessing import Process, Manager
     from .parser import parse_args
-    from ..utils.bids import write_derivative_description
+    from ..utils.bids import write_derivative_description, write_bidsignore
 
     parse_args()
 
@@ -26,7 +26,8 @@ def main():
     # CRITICAL Save the config to a file. This is necessary because the execution graph
     # is built as a separate process to keep the memory footprint low. The most
     # straightforward way to communicate with the child process is via the filesystem.
-    config_file = config.execution.work_dir / f"config-{config.execution.run_uuid}.toml"
+    config_file = config.execution.work_dir / config.execution.run_uuid / "config.toml"
+    config_file.parent.mkdir(exist_ok=True, parents=True)
     config.to_filename(config_file)
 
     # CRITICAL Call build_workflow(config_file, retval) in a subprocess.
@@ -165,6 +166,7 @@ def main():
         write_derivative_description(
             config.execution.bids_dir, config.execution.output_dir / "fmriprep"
         )
+        write_bidsignore(config.execution.output_dir / "fmriprep")
 
         if failed_reports and not config.execution.notrack:
             sentry_sdk.capture_message(

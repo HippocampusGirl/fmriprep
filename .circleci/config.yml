@@ -297,43 +297,6 @@ jobs:
       - store_artifacts:
           path: /tmp/data/reports
 
-  build_docs:
-    docker:
-      - image: python:3.7.4
-    working_directory: /tmp/src/fmriprep
-    environment:
-      - FSLOUTPUTTYPE: 'NIFTI'
-    steps:
-      - checkout
-      - run:
-          name: Check whether build should be skipped
-          command: |
-            if [[ "$( git log --format=oneline -n 1 $CIRCLE_SHA1 | grep -i -E '\[skip[ _]?docs\]' )" != "" ]]; then
-              echo "Skipping doc building job"
-              circleci step halt
-            fi
-      - run:
-          name: Check Python version and upgrade pip
-          command: |
-            python --version
-            python -m pip install -U pip
-      - run:
-          name: Install graphviz
-          command: |
-              apt-get update
-              apt-get install -y graphviz
-      - run:
-          name: Install Requirements (may contain pinned versions)
-          command: python -m pip install -r docs/requirements.txt
-      - run:
-          name: Install fMRIPrep
-          command: python -m pip install ".[doc]"
-      - run:
-          name: Build documentation
-          command: make SPHINXOPTS="-W" -C docs html
-      - store_artifacts:
-          path: /tmp/src/fmriprep/docs/_build/html
-
   ds005:
     machine:
       image: circleci/classic:201711-01
@@ -638,7 +601,7 @@ jobs:
                 ${FASTRACK_ARG} \
                 --fs-no-reconall --sloppy \
                 --output-spaces MNI152NLin2009cAsym:res-2 anat func \
-                --mem_mb 4096 --nthreads 2 -vv
+                --mem_mb 4096 --nthreads 2 -vv --debug compcor
       - run:
           name: Checking outputs of fMRIPrep
           command: |
@@ -653,10 +616,10 @@ jobs:
       - run:
           name: Generate report with one artificial error
           command: |
+            set -x
             sudo mv /tmp/${DATASET}/derivatives/fmriprep/sub-100185.html \
                     /tmp/${DATASET}/derivatives/fmriprep/sub-100185_noerror.html
-            UUID="$(date '+%Y%m%d-%H%M%S_')$(uuidgen)"
-            mkdir -p /tmp/${DATASET}/derivatives/fmriprep/sub-100185/log/$UUID/
+            UUID=$(grep uuid /tmp/${DATASET}/work/*/config.toml | cut -d\" -f 2)
             cp /tmp/src/fmriprep/fmriprep/data/tests/crash_files/*.txt \
                 /tmp/${DATASET}/derivatives/fmriprep/sub-100185/log/$UUID/
             set +e
@@ -666,7 +629,7 @@ jobs:
                 /tmp/data/${DATASET} /tmp/${DATASET}/derivatives participant \
                 --fs-no-reconall --sloppy --write-graph \
                 --output-spaces MNI152NLin2009cAsym:res-2 anat func \
-                --reports-only --run-uuid $UUID
+                --reports-only --config-file /tmp/${DATASET}/work/${UUID}/config.toml -vv
             RET=$?
             set -e
             [[ "$RET" -eq "1" ]]
@@ -1048,18 +1011,6 @@ workflows:
             tags:
               only: /.*/
 
-      - build_docs:
-          filters:
-            branches:
-              ignore:
-                - /tests?\/.*/
-                - /ds005\/.*/
-                - /ds054\/.*/
-                - /ds210\/.*/
-                - /docker\/.*/
-            tags:
-              only: /.*/
-
       - test_deploy_pypi:
           filters:
             branches:
@@ -1140,7 +1091,6 @@ workflows:
           requires:
             - test_deploy_pypi
             - test_pytest
-            - build_docs
             - ds005
             - ds054
             - ds210

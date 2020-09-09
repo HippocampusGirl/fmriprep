@@ -4,8 +4,9 @@
 from nipype.pipeline import engine as pe
 from nipype.interfaces import utility as niu
 
-from ...config import DEFAULT_MEMORY_MIN_GB
-from ...interfaces import DerivativesDataSink
+from fmriprep import config
+from fmriprep.config import DEFAULT_MEMORY_MIN_GB
+from fmriprep.interfaces import DerivativesDataSink
 
 
 def init_func_derivatives_wf(
@@ -61,22 +62,42 @@ def init_func_derivatives_wf(
         'bold_std_ref', 'bold_t1', 'bold_t1_ref', 'bold_native', 'bold_native_ref',
         'bold_mask_native', 'cifti_variant', 'cifti_metadata', 'cifti_density',
         'confounds', 'confounds_metadata', 'melodic_mix', 'nonaggr_denoised_file',
-        'source_file', 'surf_files', 'surf_refs', 'template', 'spatial_reference']),
+        'source_file', 'surf_files', 'surf_refs', 'template', 'spatial_reference',
+        'bold2anat_xfm', 'anat2bold_xfm', 'acompcor_masks', 'tcompcor_mask']),
         name='inputnode')
 
     raw_sources = pe.Node(niu.Function(function=_bids_relative), name='raw_sources')
     raw_sources.inputs.bids_root = bids_root
 
     ds_confounds = pe.Node(DerivativesDataSink(
-        base_directory=output_dir, desc='confounds', suffix='regressors',
+        base_directory=output_dir, desc='confounds', suffix='timeseries',
         dismiss_entities=("echo",)),
         name="ds_confounds", run_without_submitting=True,
         mem_gb=DEFAULT_MEMORY_MIN_GB)
+    ds_ref_t1w_xfm = pe.Node(
+        DerivativesDataSink(base_directory=output_dir, to='T1w',
+                            mode='image', suffix='xfm',
+                            extension='.txt',
+                            dismiss_entities=('echo',),
+                            **{'from': 'scanner'}),
+        name='ds_ref_t1w_xfm', run_without_submitting=True)
+    ds_ref_t1w_inv_xfm = pe.Node(
+        DerivativesDataSink(base_directory=output_dir, to='scanner',
+                            mode='image', suffix='xfm',
+                            extension='.txt',
+                            dismiss_entities=('echo',),
+                            **{'from': 'T1w'}),
+        name='ds_t1w_tpl_inv_xfm', run_without_submitting=True)
+
     workflow.connect([
         (inputnode, raw_sources, [('source_file', 'in_files')]),
         (inputnode, ds_confounds, [('source_file', 'source_file'),
                                    ('confounds', 'in_file'),
                                    ('confounds_metadata', 'meta_dict')]),
+        (inputnode, ds_ref_t1w_xfm, [('source_file', 'source_file'),
+                                     ('bold2anat_xfm', 'in_file')]),
+        (inputnode, ds_ref_t1w_inv_xfm, [('source_file', 'source_file'),
+                                         ('anat2bold_xfm', 'in_file')]),
     ])
 
     # if nonstd_spaces.intersection(('func', 'run', 'bold', 'boldref', 'sbref')):
@@ -122,7 +143,6 @@ def init_func_derivatives_wf(
     #                             compress=True, dismiss_entities=("echo",)),
     #         name='ds_bold_t1_ref', run_without_submitting=True,
     #         mem_gb=DEFAULT_MEMORY_MIN_GB)
-    #
     #     ds_bold_mask_t1 = pe.Node(
     #         DerivativesDataSink(base_directory=output_dir, space='T1w', desc='brain',
     #                             suffix='mask', compress=True, dismiss_entities=("echo",)),
@@ -171,7 +191,7 @@ def init_func_derivatives_wf(
     #             compress=True),
     #         name='ds_aroma_std', run_without_submitting=True,
     #         mem_gb=DEFAULT_MEMORY_MIN_GB)
-    #
+
     #     workflow.connect([
     #         (inputnode, ds_aroma_noise_ics, [('source_file', 'source_file'),
     #                                          ('aroma_noise_ics', 'in_file')]),
@@ -317,6 +337,23 @@ def init_func_derivatives_wf(
                                         (('cifti_metadata', _get_surface), 'space'),
                                         ('cifti_density', 'density'),
                                         (('cifti_metadata', _read_json), 'meta_dict')])
+        ])
+
+    if "compcor" in config.execution.debug:
+        ds_acompcor_masks = pe.Node(
+            DerivativesDataSink(
+                base_directory=output_dir, desc=[f"CompCor{_}" for _ in "CWA"],
+                suffix="mask", compress=True),
+            name="ds_acompcor_masks", run_without_submitting=True)
+        ds_tcompcor_mask = pe.Node(
+            DerivativesDataSink(
+                base_directory=output_dir, desc="CompCorT", suffix="mask", compress=True),
+            name="ds_tcompcor_mask", run_without_submitting=True)
+        workflow.connect([
+            (inputnode, ds_acompcor_masks, [("acompcor_masks", "in_file"),
+                                            ("source_file", "source_file")]),
+            (inputnode, ds_tcompcor_mask, [("tcompcor_mask", "in_file"),
+                                           ("source_file", "source_file")]),
         ])
 
     return workflow
