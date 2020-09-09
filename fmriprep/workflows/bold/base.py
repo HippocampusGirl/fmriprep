@@ -196,6 +196,10 @@ def init_func_preproc_wf(bold_file):
     # entities['suffix'] = 'sbref'
     # entities['extension'] = ['.nii', '.nii.gz']  # Overwrite extensions
     # sbref_files = layout.get(return_type='file', **entities)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9f5035e1 (Fix sbref removal)
     # sbref_msg = f"No single-band-reference found for {os.path.basename(ref_file)}."
     # if sbref_files and 'sbref' in config.workflow.ignore:
     #     sbref_msg = "Single-band reference file(s) found and ignored."
@@ -580,6 +584,9 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
                 bold_sdc_wf.get_node(node).interface.out_path_base = ""
                 bold_sdc_wf.get_node(node).inputs.dismiss_entities = ("echo",)
 
+        # if 'syn' in fmaps:
+        #     sdc_select_std = pe.Node(
+        #         KeySelect(fields=['std2anat_xfm']),
         #         name='sdc_select_std', run_without_submitting=True)
         #     sdc_select_std.inputs.key = 'MNI152NLin2009cAsym'
         #     workflow.connect([
@@ -606,7 +613,7 @@ Non-gridded (surface) resamplings were performed using `mri_vol2surf`
         #     # And ensure echo is dropped from report
         #     for node in syn_unwarp_report_wf.list_node_names():
         #         if node.split('.')[-1].startswith('ds_'):
-        #             syn_unwarp_report_wf.get_node(node).interface.out_path_base = ""
+        #             syn_unwarp_report_wf.get_node(node).interface.out_path_base = 'fmriprep'
         #             syn_unwarp_report_wf.get_node(node).inputs.dismiss_entities = ("echo",)
 
     # # Map final BOLD mask into T1w space (if required)
