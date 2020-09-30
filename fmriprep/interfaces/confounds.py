@@ -288,7 +288,7 @@ def _get_ica_confounds(ica_out_dir, skip_vols, newpath=None):
 
     # Add variance statistics to metadata
     aroma_icstats = pd.read_csv(
-        aroma_icstats, header=None, sep='  ')[[0, 1]] / 100
+        aroma_icstats, header=None, sep='  ', engine='python')[[0, 1]] / 100
     aroma_icstats.columns = [
         'model_variance_explained', 'total_variance_explained']
     aroma_metadata = pd.concat([aroma_metadata, aroma_icstats], axis=1)
