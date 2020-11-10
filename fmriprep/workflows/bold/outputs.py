@@ -100,13 +100,9 @@ def init_func_derivatives_wf(
     from niworkflows.interfaces.utility import KeySelect
     from smriprep.workflows.outputs import _bids_relative
 
-<<<<<<< HEAD
     timing_parameters = prepare_timing_parameters(metadata)
 
-    nonstd_spaces = set(spaces.get_nonstandard())
-=======
     # nonstd_spaces = set(spaces.get_nonstandard())
->>>>>>> 83171888 ([REF] Disable outputs to save space)
     workflow = Workflow(name=name)
 
     inputnode = pe.Node(niu.IdentityInterface(fields=[

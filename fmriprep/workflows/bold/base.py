@@ -196,10 +196,6 @@ def init_func_preproc_wf(bold_file):
     # entities['suffix'] = 'sbref'
     # entities['extension'] = ['.nii', '.nii.gz']  # Overwrite extensions
     # sbref_files = layout.get(return_type='file', **entities)
-<<<<<<< HEAD
-=======
-
->>>>>>> 9f5035e1 (Fix sbref removal)
     # sbref_msg = f"No single-band-reference found for {os.path.basename(ref_file)}."
     # if sbref_files and 'sbref' in config.workflow.ignore:
     #     sbref_msg = "Single-band reference file(s) found and ignored."
